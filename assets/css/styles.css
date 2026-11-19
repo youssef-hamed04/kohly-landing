@@ -55,21 +55,40 @@ svg { display: block; }
 .hero-grid > *, .contact-grid > * { min-inline-size: 0; }
 .lead { font-size: clamp(1.125rem, 1rem + .4vw, 1.25rem); color: var(--muted-light); }
 .actions { display: flex; flex-wrap: wrap; gap: .75rem; margin-block-start: 2rem; }
-.hero-visual { position: relative; inline-size: 100%; aspect-ratio: 1; container-type: inline-size; }
+.hero-visual { position: relative; inline-size: 100%; aspect-ratio: 5 / 4; container-type: inline-size; }
 .hero-fallback, .hero-visual canvas { position: absolute; inset: 0; inline-size: 100%; block-size: 100%; }
 .hero-fallback { color: var(--sky); }
 .fallback-slab { fill: var(--navy-800); fill-opacity: .6; }
-.hero-visual canvas { opacity: 0; }
+.hero-art { position: absolute; inset: 0; }
+/* Moons behind the stack (z-index under 50) pass beneath the canvas; nearer ones above it. */
+.hero-visual canvas { z-index: 50; opacity: 0; pointer-events: none; }
 .is-3d-ready canvas { opacity: 1; }
 .is-3d-ready .hero-fallback { opacity: 0; visibility: hidden; }
-.layer-label { position: absolute; left: 0; top: 0; margin-block-start: -.7em; opacity: 0; visibility: hidden; font: 500 .8rem var(--display); color: var(--sky); white-space: nowrap; padding-left: 1.5rem; pointer-events: none; }
-.layer-label::before { content: ""; position: absolute; left: 0; top: 50%; inline-size: 1.25rem; block-size: 1px; background: var(--sky); }
+.layer-label { position: absolute; left: 0; top: 0; margin-block-start: -.7em; opacity: 0; visibility: hidden; font: 500 .8rem var(--display); color: var(--sky); white-space: nowrap; padding-left: calc(var(--leader, 1.25rem) + .25rem); pointer-events: none; }
+.layer-label::before { content: ""; position: absolute; left: 0; top: 50%; inline-size: var(--leader, 1.25rem); block-size: 1px; background: var(--sky); }
 .is-3d-ready .layer-label { visibility: visible; }
-.services, .team { background: var(--paper); color: var(--text-dark); color-scheme: light; }
-.services :focus-visible, .team :focus-visible { outline-color: var(--cobalt); }
+/* Service moons on the orbit; hero3d.js sets their position and depth every frame. */
+.orbit-moons { position: absolute; inset: 0; margin: 0; padding: 0; list-style: none; pointer-events: none; }
+.moon { position: absolute; left: 0; top: 0; z-index: var(--moon-z, 1); display: grid; place-items: center; inline-size: 44px; block-size: 44px; margin: -22px 0 0 -22px; border: 1px solid var(--line-strong); border-radius: 50%; background: var(--navy-800); color: var(--sky); text-decoration: none; opacity: var(--moon-opacity, 1); scale: var(--moon-scale, 1); pointer-events: auto; }
+.moon svg { inline-size: 22px; block-size: 22px; }
+.moon:is(:hover, :focus-visible) { z-index: 200; opacity: 1; scale: 1; border-color: var(--sky); background: var(--navy-600); }
+.moon-label { position: absolute; top: 50%; translate: 0 -50%; padding-block: .15rem; padding-inline: .5rem; border: 1px solid var(--line-strong); border-radius: 4px; background: var(--ink); color: var(--text-light); font: 500 .8rem var(--display); line-height: 1.6; white-space: nowrap; opacity: 0; pointer-events: none; }
+.moon[data-side="right"] .moon-label { left: calc(100% + .5rem); }
+.moon[data-side="left"] .moon-label { right: calc(100% + .5rem); }
+/* The front moon names its service; a hovered or focused moon takes over. */
+.moon:is(:hover, :focus-visible, [data-front]) .moon-label { opacity: 1; }
+.orbit-moons:has(.moon:is(:hover, :focus-visible)) .moon[data-front]:not(:hover, :focus-visible) .moon-label { opacity: 0; }
+.motion-toggle { position: absolute; left: 0; bottom: 0; z-index: 300; display: grid; place-items: center; inline-size: 44px; block-size: 44px; padding: 0; border: 1.5px solid var(--line-strong); border-radius: 50%; background: transparent; color: var(--sky); }
+.motion-toggle[hidden] { display: none; }
+.motion-toggle:hover { border-color: var(--sky); }
+.motion-toggle svg { inline-size: 18px; block-size: 18px; }
+.motion-toggle .icon-play, .motion-toggle.is-paused .icon-pause { display: none; }
+.motion-toggle.is-paused .icon-play { display: block; }
+.services { background: var(--paper); color: var(--text-dark); color-scheme: light; }
+.services :focus-visible { outline-color: var(--cobalt); }
 .section-intro { color: var(--muted-light); margin-block-end: 3rem; }
-.services .section-intro, .team .section-intro { color: var(--muted-dark); }
-.service-list, .tags, .profiles, .projects, .steps { list-style: none; padding: 0; margin: 0; }
+.services .section-intro { color: var(--muted-dark); }
+.service-list, .tags, .projects, .steps { list-style: none; padding: 0; margin: 0; }
 .service-row { display: grid; grid-template-columns: 2.5rem minmax(12rem, 1fr) 1.6fr; gap: 1rem; padding-block: 2rem; padding-inline: 1rem; margin-inline: -1rem; border-block-start: 1px solid var(--rule-light); }
 .service-row:last-child { border-block-end: 1px solid var(--rule-light); }
 .service-row:hover { background: var(--white); }
@@ -78,16 +97,12 @@ svg { display: block; }
 .tags { display: flex; flex-wrap: wrap; gap: .5rem; }
 .tags li { border: 1px solid var(--rule-light); border-radius: 4px; padding-block: .1rem; padding-inline: .5rem; color: var(--muted-dark); font-size: .875rem; }
 .process, .work { background: var(--navy-900); }
+.process + .work { border-block-start: 1px solid var(--navy-600); }
 .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; position: relative; isolation: isolate; }
 .steps::before { content: ""; position: absolute; inset-inline: 0; inset-block-start: 1.5rem; block-size: .65rem; border-block-start: 1px solid var(--sky); border-inline: 1px solid var(--sky); z-index: -1; }
 .step-number { display: grid; place-items: center; inline-size: 3rem; block-size: 3rem; border: 1.5px solid var(--sky); border-radius: 50%; background: var(--navy-900); color: var(--sky); font-family: var(--display); margin-block-end: 1.5rem; }
 .steps p, .projects p { color: var(--muted-light); }
-.profiles, .projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1.5rem; }
-.profile { border: 1px solid var(--rule-light); border-radius: 10px; padding: 1.5rem; background: var(--white); }
-.avatar { display: grid; place-items: center; inline-size: 4.5rem; block-size: 4.5rem; border: 1.5px solid var(--cobalt); border-radius: 50%; margin-block-end: 1.5rem; }
-.profile h3 { margin-block-end: .25rem; }
-.profile .role { color: var(--cobalt); font-weight: 600; }
-.profile p:last-child { color: var(--muted-dark); margin-block-end: 0; }
+.projects { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 16rem), 1fr)); gap: 1.5rem; }
 .project-media { aspect-ratio: 4 / 3; display: grid; place-items: center; border-radius: 10px; background-color: var(--navy-800); background-image: linear-gradient(var(--grid-minor) 1px, transparent 1px), linear-gradient(90deg, var(--grid-minor) 1px, transparent 1px); background-size: 24px 24px; color: var(--muted-light); margin-block-end: 1.5rem; }
 .projects h3 { margin-block-end: .4rem; }
 .contact-grid { align-items: start; }
@@ -119,7 +134,6 @@ button:disabled { opacity: .65; cursor: wait; }
 .footer-links a { display: inline-flex; align-items: center; min-block-size: 48px; text-decoration-color: var(--navy-600); }
 .footer-links a:hover { color: var(--sky); text-decoration-color: currentColor; }
 .copyright { margin-block: 2rem 0; }
-@media (min-width: 60rem) { .hero-visual { aspect-ratio: 5 / 4; } }
 @media (max-width: 48rem) {
   .service-row { grid-template-columns: 2.5rem 1fr; }
   .service-row > div { grid-column: 2; }
@@ -130,5 +144,5 @@ button:disabled { opacity: .65; cursor: wait; }
   .steps::before { inset-inline-start: 1.5rem; inset-inline-end: auto; inset-block: 0; inline-size: .65rem; block-size: auto; border-block: 1px solid var(--sky); border-inline-start: 1px solid var(--sky); border-inline-end: 0; }
 }
 @media (max-width: 24rem) { .menu-button { gap: .3rem; padding-inline: .5rem; } .header-row .button, .menu-button { font-size: .875rem; } .logo { gap: .25rem; } .header-row { gap: .35rem; } .service-row { grid-template-columns: 1fr; } .service-row > div { grid-column: auto; } }
-@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } .hero-fallback, .hero-visual canvas { transition: opacity .3s; } a, button { transition: color .15s, background-color .15s; } }
-@media (forced-colors: active) { .button, .step-number, .avatar, .profile, .service-options label { border: 1px solid ButtonText; } :focus-visible { outline-color: Highlight; } .line-icon, .logo svg, .logo .orbit { color: LinkText; } }
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } .hero-fallback, .hero-visual canvas { transition: opacity .3s; } a, button { transition: color .15s, background-color .15s; } .moon { transition: background-color .15s, border-color .15s; } .moon-label { transition: opacity .15s; } }
+@media (forced-colors: active) { .button, .step-number, .service-options label { border: 1px solid ButtonText; } :focus-visible { outline-color: Highlight; } .line-icon, .logo svg, .logo .orbit, .moon { color: LinkText; } .motion-toggle { border-color: ButtonText; color: ButtonText; } }

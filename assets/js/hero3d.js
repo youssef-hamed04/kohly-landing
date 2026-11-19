@@ -13,7 +13,7 @@ async function initHero() {
   const canvas = renderer.domElement;
   canvas.setAttribute('aria-hidden', 'true');
   Object.assign(canvas.style, { display: 'block', inlineSize: '100%', blockSize: '100%' });
-  container.append(canvas);
+  (container.querySelector('.hero-art') || container).append(canvas);
   const scene = new THREE.Scene();
   const camera = new THREE.OrthographicCamera(-5, 5, 5, -5, .1, 100);
   camera.position.set(10, 8.5, 10);
@@ -23,8 +23,19 @@ async function initHero() {
   const sky = 0x9DBEF3;
   const layers = [];
   const labels = [...container.querySelectorAll('[data-layer]')];
+  const moonsList = container.querySelector('[data-orbit-moons]');
+  const toggle = container.querySelector('[data-motion-toggle]');
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
   const pointer = matchMedia('(hover: hover) and (pointer: fine)');
+  const ORBIT_RADIUS = 3;
+  const ORBIT_TILT = THREE.MathUtils.degToRad(18);
+  const ORBIT_PERIOD = 45000;
+  // Moon badge radius in px, plus room for its border and focus ring.
+  const MOON_PX = 26;
+  // The front of the orbit travels in the page's reading direction.
+  const orbitDirection = getComputedStyle(container).direction === 'rtl' ? 1 : -1;
+  let orbitAngle = THREE.MathUtils.degToRad(15);
+  let userPaused = false;
   let frame = 0;
   let visible = false;
   let failed = false;
@@ -37,6 +48,8 @@ async function initHero() {
   let tiltX = 0;
   let tiltY = 0;
   let introDone = motion.matches;
+  // Where the layer names' leader lines end: just past the orbit and its moons.
+  let leaderEndPx = 0;
 
   function plane(group, x, z, w, h, color = sky, opacity = .55) {
     const mesh = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({
@@ -110,6 +123,63 @@ async function initHero() {
   grid.material.opacity = .35;
   scene.add(grid);
 
+  // A slanted orbit around the stack, like the swoosh in the Orbita logo.
+  function ringPoint(angle, target = new THREE.Vector3()) {
+    return target.set(Math.cos(angle) * ORBIT_RADIUS, 0, Math.sin(angle) * ORBIT_RADIUS);
+  }
+  const orbit = new THREE.Group();
+  orbit.position.y = 1.25;
+  // Tip the ring about the horizontal axis that faces the camera, so its right side rises on screen.
+  orbit.quaternion.setFromAxisAngle(new THREE.Vector3(1, 0, 1).normalize(), ORBIT_TILT);
+  const ringMaterial = new THREE.LineBasicMaterial({ color: sky, transparent: true, opacity: 0 });
+  const ringPoints = Array.from({ length: 128 }, (_, i) => ringPoint(i / 128 * Math.PI * 2));
+  orbit.add(new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints(ringPoints), ringMaterial));
+  root.add(orbit);
+
+  // One moon per service: a real link built from the page's own service rows.
+  const moons = [];
+  if (moonsList) {
+    for (const row of document.querySelectorAll('.service-row[id]')) {
+      const item = document.createElement('li');
+      const link = document.createElement('a');
+      link.className = 'moon';
+      link.href = `#${row.id}`;
+      const icon = row.querySelector('.line-icon')?.cloneNode(true);
+      if (icon) {
+        icon.removeAttribute('class');
+        link.append(icon);
+      }
+      const label = document.createElement('span');
+      label.className = 'moon-label';
+      label.textContent = row.querySelector('h3')?.textContent.trim() ?? '';
+      link.append(label);
+      item.append(link);
+      moonsList.append(item);
+      moons.push(link);
+    }
+  }
+  const moonPoint = new THREE.Vector3();
+  const orbitCenter = new THREE.Vector3();
+  const toCamera = new THREE.Vector3().subVectors(camera.position, new THREE.Vector3(0, 1.25, 0)).normalize();
+  // Largest share of the radius that can point at the camera, used to scale depth to 0..1.
+  const depthReach = ORBIT_RADIUS * Math.hypot(toCamera.x, toCamera.z);
+
+  function isStill() {
+    return motion.matches || userPaused;
+  }
+  function orbitHeld() {
+    return Boolean(moonsList?.matches(':focus-within')) || moons.some((link) => link.matches(':hover'));
+  }
+  function syncControls() {
+    const ready = !failed && container.classList.contains('is-3d-ready');
+    if (moonsList) moonsList.hidden = !ready;
+    if (!toggle) return;
+    toggle.hidden = !ready || motion.matches;
+    const label = userPaused ? toggle.dataset.labelPlay : toggle.dataset.labelPause;
+    toggle.setAttribute('aria-label', label);
+    toggle.title = label;
+    toggle.classList.toggle('is-paused', userPaused);
+  }
   function stop() {
     cancelAnimationFrame(frame);
     frame = 0;
@@ -121,9 +191,37 @@ async function initHero() {
     stop();
     container.classList.remove('is-3d-ready');
     labels.forEach((label) => { label.style.opacity = '0'; });
+    syncControls();
     canvas.remove();
     renderer.dispose();
     console.warn('Hero 3D unavailable; showing the static illustration.', error);
+  }
+  function placeMoons(fade) {
+    orbit.getWorldPosition(orbitCenter);
+    let front = null;
+    let frontDepth = -1;
+    moons.forEach((link, i) => {
+      orbit.localToWorld(ringPoint(orbitAngle + i / moons.length * Math.PI * 2, moonPoint));
+      const toward = (moonPoint.x - orbitCenter.x) * toCamera.x + (moonPoint.y - orbitCenter.y) * toCamera.y + (moonPoint.z - orbitCenter.z) * toCamera.z;
+      // 0 at the back of the orbit, 1 at the front.
+      const depth = Math.min(1, Math.max(0, (toward / depthReach + 1) / 2));
+      if (depth > frontDepth) { front = link; frontDepth = depth; }
+      moonPoint.project(camera);
+      const x = (moonPoint.x * .5 + .5) * width;
+      const y = (-moonPoint.y * .5 + .5) * height;
+      link.style.translate = `${x}px ${y}px`;
+      link.style.setProperty('--moon-scale', (.8 + .2 * depth).toFixed(3));
+      link.style.setProperty('--moon-opacity', ((.6 + .4 * depth) * fade).toFixed(3));
+      link.style.setProperty('--moon-z', String(10 + Math.round(depth * 100)));
+      // Not reachable until it has started to fade in after the intro.
+      const visibility = fade > 0 ? '' : 'hidden';
+      if (link.style.visibility !== visibility) link.style.visibility = visibility;
+      // Open the label toward the middle of the visual so it stays inside it.
+      const side = x < width / 2 ? 'right' : 'left';
+      if (link.dataset.side !== side) link.dataset.side = side;
+    });
+    // The nearest moon shows its name, so the orbit reads as the services without hover.
+    moons.forEach((link) => link.toggleAttribute('data-front', link === front));
   }
   function render() {
     const reduced = motion.matches;
@@ -133,8 +231,11 @@ async function initHero() {
       tiltX = tiltY = 0;
       root.rotation.set(0, 0, 0);
     } else {
-      tiltX += ((pointer.matches ? targetX : 0) - tiltX) * .06;
-      tiltY += ((pointer.matches ? targetY : 0) - tiltY) * .06;
+      // While paused, keep the last pose instead of easing toward the pointer.
+      if (!userPaused) {
+        tiltX += ((pointer.matches ? targetX : 0) - tiltX) * .06;
+        tiltY += ((pointer.matches ? targetY : 0) - tiltY) * .06;
+      }
       root.rotation.set(tiltX, (introDone ? Math.sin(t * .25) * .08 : 0) + tiltY, 0);
     }
     const gap = 1.25 + (!reduced && introDone ? .06 * Math.sin(t * .8) : 0);
@@ -147,7 +248,9 @@ async function initHero() {
     });
     if (elapsed >= 1340) introDone = true;
     construction.scale.y = gap / 1.25;
-    constructionMaterial.opacity = .35 * (reduced ? 1 : Math.min(1, Math.max(0, (elapsed - 1340) / 300)));
+    const outro = reduced ? 1 : Math.min(1, Math.max(0, (elapsed - 1340) / 300));
+    constructionMaterial.opacity = .35 * outro;
+    ringMaterial.opacity = .7 * outro;
     root.updateMatrixWorld(true);
     layers.forEach((layer, i) => {
       // Just past the slab corner that sits furthest right on screen.
@@ -155,77 +258,108 @@ async function initHero() {
       const x = (anchor.x * .5 + .5) * width;
       const y = (-anchor.y * .5 + .5) * height;
       labels[i].style.translate = `${x}px ${y}px`;
+      // Run the leader line past the orbit so a moon never covers a layer name.
+      labels[i].style.setProperty('--leader', `${Math.max(20, leaderEndPx - x).toFixed(1)}px`);
       labels[i].style.opacity = String(layer.fade);
     });
+    placeMoons(outro);
     renderer.render(scene, camera);
   }
   function draw() {
     try {
       render();
-      container.classList.add('is-3d-ready');
+      if (!container.classList.contains('is-3d-ready')) {
+        container.classList.add('is-3d-ready');
+        syncControls();
+      }
     } catch (error) { fail(error); }
   }
   function tick(time) {
     frame = 0;
-    if (failed || !visible || document.visibilityState !== 'visible' || motion.matches) return;
-    if (lastTime !== null) elapsed += Math.min(time - lastTime, 100);
+    if (failed || !visible || document.visibilityState !== 'visible' || isStill()) return;
+    const step = lastTime === null ? 0 : Math.min(time - lastTime, 100);
     lastTime = time;
+    // After the intro, hold the orbit and the idle sway while a moon is hovered or
+    // focused, so it never slides away from the pointer. Pointer tilt still follows.
+    if (!introDone || !orbitHeld()) {
+      elapsed += step;
+      orbitAngle += orbitDirection * step / ORBIT_PERIOD * Math.PI * 2;
+    }
     draw();
     if (!failed) frame = requestAnimationFrame(tick);
   }
   function updateLoop() {
     stop();
     if (failed || !visible || document.visibilityState !== 'visible') return;
-    if (motion.matches) draw();
+    if (isStill()) draw();
     else frame = requestAnimationFrame(tick);
   }
   function resize() {
     if (failed) return;
     width = Math.max(1, container.clientWidth);
     height = Math.max(1, container.clientHeight);
-    // Fit the assembled stack (padded for sway, breathing and tilt) plus the label
-    // column to its right. The intro starts below the frame, which is fine: layers
-    // are still transparent there.
+    // Fit the assembled stack (padded for sway, breathing and tilt), the label
+    // column to its right, and the orbit with its moon badges. The intro starts
+    // below the frame, which is fine: layers are still transparent there.
     camera.updateMatrixWorld(true);
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-    for (const x of [-2.1, 2.1]) for (const y of [-.1, 2.75]) for (const z of [-1.6, 1.6]) {
-      const point = new THREE.Vector3(x, y, z).applyMatrix4(camera.matrixWorldInverse);
-      minX = Math.min(minX, point.x);
-      maxX = Math.max(maxX, point.x);
-      minY = Math.min(minY, point.y);
-      maxY = Math.max(maxY, point.y);
-    }
+    const stack = { minX: Infinity, maxX: -Infinity, minY: Infinity, maxY: -Infinity };
+    const ring = { ...stack };
+    const grow = (box, point) => {
+      point.applyMatrix4(camera.matrixWorldInverse);
+      box.minX = Math.min(box.minX, point.x);
+      box.maxX = Math.max(box.maxX, point.x);
+      box.minY = Math.min(box.minY, point.y);
+      box.maxY = Math.max(box.maxY, point.y);
+    };
+    for (const x of [-2.1, 2.1]) for (const y of [-.1, 2.75]) for (const z of [-1.6, 1.6]) grow(stack, new THREE.Vector3(x, y, z));
+    orbit.updateMatrix();
+    for (const point of ringPoints) grow(ring, point.clone().applyMatrix4(orbit.matrix));
     const margin = 1.12;
-    const labelPx = Math.max(...labels.map((label) => label.offsetWidth)) + 12;
-    let viewWidth = (maxX - minX) * margin / Math.max(.4, 1 - labelPx / width);
-    let viewHeight = viewWidth * height / width;
-    if (viewHeight < (maxY - minY) * margin) {
-      viewHeight = (maxY - minY) * margin;
-      viewWidth = viewHeight * width / height;
-    }
-    const centerX = (minX + maxX + labelPx * viewWidth / width) / 2;
-    const centerY = (minY + maxY) / 2;
-    camera.left = centerX - viewWidth / 2;
-    camera.right = centerX + viewWidth / 2;
-    camera.top = centerY + viewHeight / 2;
-    camera.bottom = centerY - viewHeight / 2;
+    // The layer names sit right of the orbit: a gap for the moons, the leader line's
+    // end, then the widest name's text.
+    const leaderGap = MOON_PX + 8;
+    const textPx = Math.max(...labels.map((label) => label.offsetWidth - parseFloat(getComputedStyle(label).paddingLeft)));
+    const rightPx = leaderGap + 4 + textPx + 8;
+    const contentRight = Math.max(stack.maxX, ring.maxX);
+    // World units per pixel needed for a span of world units plus some fixed pixels.
+    const unitFor = (span, size, px) => span / Math.max(size * .4, size / margin - px);
+    const unit = Math.max(
+      unitFor(contentRight - Math.min(stack.minX, ring.minX), width, MOON_PX + rightPx),
+      unitFor(Math.max(stack.maxY, ring.maxY) - Math.min(stack.minY, ring.minY), height, 2 * MOON_PX),
+    );
+    const left = Math.min(stack.minX, ring.minX - MOON_PX * unit);
+    const right = contentRight + rightPx * unit;
+    const bottom = Math.min(stack.minY, ring.minY - MOON_PX * unit);
+    const top = Math.max(stack.maxY, ring.maxY + MOON_PX * unit);
+    const centerX = (left + right) / 2;
+    const centerY = (bottom + top) / 2;
+    camera.left = centerX - unit * width / 2;
+    camera.right = centerX + unit * width / 2;
+    camera.top = centerY + unit * height / 2;
+    camera.bottom = centerY - unit * height / 2;
     camera.updateProjectionMatrix();
+    leaderEndPx = (contentRight - camera.left) / unit + leaderGap;
     renderer.setSize(width, height, false);
     draw();
   }
   const hero = container.closest('.hero');
   hero.addEventListener('pointermove', (event) => {
-    if (motion.matches || !pointer.matches) return;
+    if (motion.matches || userPaused || !pointer.matches) return;
     const bounds = hero.getBoundingClientRect();
     targetY = ((event.clientX - bounds.x) / bounds.width * 2 - 1) * .12;
     targetX = ((event.clientY - bounds.y) / bounds.height * 2 - 1) * .06;
   });
   hero.addEventListener('pointerleave', () => { targetX = targetY = 0; });
+  toggle?.addEventListener('click', () => {
+    userPaused = !userPaused;
+    // Pausing mid-intro jumps to the assembled scene so nothing is left half-faded.
+    if (userPaused) { introDone = true; elapsed = Math.max(elapsed, 1640); }
+    syncControls();
+    updateLoop();
+  });
   motion.addEventListener('change', () => {
     if (motion.matches) { introDone = true; elapsed = Math.max(elapsed, 1640); }
+    syncControls();
     updateLoop();
   });
   document.addEventListener('visibilitychange', updateLoop);
