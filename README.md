@@ -4,6 +4,30 @@
 
 Static Arabic and English landing pages, with no build step or local dependencies. Preview with any static server, for example `python -m http.server 8000` or `npx serve .` if available. Visit `/` for Arabic and `/en/` for English.
 
+## التعديل والنشر / Edit and publish
+
+الموقع منشور على GitHub Pages مجانًا، ولا يعتمد على أي اشتراك آخر:
+
+- العربية: https://youssef-hamed04.github.io/kohly-landing/
+- English: https://youssef-hamed04.github.io/kohly-landing/en/
+- الكود / Code: https://github.com/youssef-hamed04/kohly-landing
+
+1. عدّل الملفات بأي محرر (مثل VS Code).
+2. للمعاينة، شغّل `python -m http.server 8000` داخل المجلد وافتح `http://localhost:8000`. فتح `index.html` مباشرة بالنقر المزدوج لن يشغّل الجافاسكريبت، لأن المتصفح يمنع ملفات `type="module"` من `file://`.
+3. للنشر، نفّذ من داخل المجلد:
+
+   ```sh
+   git add -A
+   git commit -m "وصف التعديل"
+   git push
+   ```
+
+   أي push إلى فرع `main` ينشر الموقع تلقائيًا خلال دقيقة أو اثنتين. أول مرة سيطلب Git تسجيل الدخول إلى GitHub.
+
+إذا ضاع المجلد، يمكن تنزيل نسخة جديدة بالأمر `git clone https://github.com/youssef-hamed04/kohly-landing.git`.
+
+The site is hosted on GitHub Pages and does not depend on any other subscription. Edit the files, preview with a local server (module scripts do not run from `file://`), then commit and `git push` to `main`. Pages redeploys within a minute or two. If this folder is lost, clone the repository again.
+
 - **الاسم / Brand:** ابحث عن `كحلي` و`Kohly` في `index.html` و`en/index.html`، بما فيها بيانات الرأس. Replace these plain-text names in both pages, including metadata.
 - **التواصل / Contact:** غيّر `hello@example.com` ورقم الهاتف ورابط `wa.me` والمكان وروابط التواصل الاجتماعي في الصفحتين. Update the contact details, social URLs, and form `data-mailto` in both pages.
 - **الفريق / Team:** استبدل `اسم العضو` و`Member name` في قسم `#team`. توجد تعليقات لاستبدال الرموز بصور حقيقية. Replace the member names; photo replacement comments specify dimensions and alternative text.
