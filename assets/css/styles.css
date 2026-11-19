@@ -1,9 +1,10 @@
 :root {
-  --ink: #060D20; --navy-900: #0A1630; --navy-800: #10224A; --navy-600: #1F3B7A;
-  --line-strong: #6F86C2; --cobalt: #2F5BEA; --sky: #9DB8FF; --paper: #F1F4FB;
+  /* Orbita brand colors: --sky #9DBEF3, --navy-600 #1C3F79, --cobalt #2E6ECF. */
+  --ink: #060D20; --navy-900: #0A1630; --navy-800: #10224A; --navy-600: #1C3F79;
+  --line-strong: #6A8FD0; --cobalt: #2E6ECF; --sky: #9DBEF3; --paper: #F1F4FB;
   --rule-light: #D3DCEE; --text-dark: #0A1630; --muted-dark: #4A5878;
   --text-light: #EEF2FC; --muted-light: #A9B6D3; --error: #FF8A8A; --white: #fff;
-  --grid-minor: rgb(157 184 255 / 0.06); --grid-major: rgb(157 184 255 / 0.12);
+  --grid-minor: rgb(157 190 243 / 0.06); --grid-major: rgb(157 190 243 / 0.12);
   --display: Alexandria, "Segoe UI", Tahoma, system-ui, sans-serif;
   --body: "IBM Plex Sans Arabic", "Segoe UI", Tahoma, system-ui, sans-serif;
   color-scheme: dark;
@@ -33,7 +34,8 @@ svg { display: block; }
 .header-row { display: flex; align-items: center; justify-content: space-between; gap: clamp(.5rem, 2vw, 1.5rem); min-block-size: 4.75rem; }
 .header-row > * { flex-shrink: 0; white-space: nowrap; }
 .logo { display: inline-flex; align-items: center; gap: .5rem; font-family: var(--display); font-weight: 700; text-decoration: none; min-block-size: 48px; }
-.logo svg { inline-size: 28px; block-size: 28px; color: var(--sky); }
+.logo svg { inline-size: 28px; block-size: 28px; }
+.logo .orbit { color: var(--sky); }
 .button, .menu-button { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; min-block-size: 48px; padding-block: .65rem; padding-inline: 1.3rem; border: 1.5px solid var(--sky); border-radius: 999px; background: var(--sky); color: var(--ink); text-decoration: none; font-weight: 600; }
 .header-row .button { padding-inline: clamp(.65rem, 1.5vw, 1.3rem); }
 .menu-button { anchor-name: --menu-button; background: transparent; color: var(--text-light); padding-inline: .65rem; }
@@ -129,4 +131,4 @@ button:disabled { opacity: .65; cursor: wait; }
 }
 @media (max-width: 24rem) { .menu-button { gap: .3rem; padding-inline: .5rem; } .header-row .button, .menu-button { font-size: .875rem; } .logo { gap: .25rem; } .header-row { gap: .35rem; } .service-row { grid-template-columns: 1fr; } .service-row > div { grid-column: auto; } }
 @media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } .hero-fallback, .hero-visual canvas { transition: opacity .3s; } a, button { transition: color .15s, background-color .15s; } }
-@media (forced-colors: active) { .button, .step-number, .avatar, .profile, .service-options label { border: 1px solid ButtonText; } :focus-visible { outline-color: Highlight; } .line-icon, .logo svg { color: LinkText; } }
+@media (forced-colors: active) { .button, .step-number, .avatar, .profile, .service-options label { border: 1px solid ButtonText; } :focus-visible { outline-color: Highlight; } .line-icon, .logo svg, .logo .orbit { color: LinkText; } }

@@ -20,7 +20,7 @@ async function initHero() {
   camera.lookAt(0, 1.25, 0);
   const root = new THREE.Group();
   scene.add(root);
-  const sky = 0x9DB8FF;
+  const sky = 0x9DBEF3;
   const layers = [];
   const labels = [...container.querySelectorAll('[data-layer]')];
   const motion = matchMedia('(prefers-reduced-motion: reduce)');
@@ -64,7 +64,7 @@ async function initHero() {
     if (i === 0) {
       const indents = [0, .3, .6, .3, .6, .3, 0];
       const lengths = [2.8, 1.8, 1.1, 2.4, 1.6, 2.1, 2.8];
-      indents.forEach((indent, row) => plane(group, -1.7 + indent, -1 + row * .32, lengths[row], .08, row ? sky : 0x2F5BEA, row ? .55 : 1));
+      indents.forEach((indent, row) => plane(group, -1.7 + indent, -1 + row * .32, lengths[row], .08, row ? sky : 0x2E6ECF, row ? .55 : 1));
     } else if (i === 1) {
       rect(group, -1.7, 1.7, -1.2, -.95);
       rect(group, -1.7, .3, -.8, .1);
@@ -72,13 +72,13 @@ async function initHero() {
       line(group, [[.5, -.8], [1.7, .1]]);
       line(group, [[1.7, -.8], [.5, .1]]);
       [[-1.7, -.6], [-.55, .55], [.6, 1.7]].forEach(([a, b]) => rect(group, a, b, .3, 1.15));
-      plane(group, -1.7, -.3, .8, .22, 0x2F5BEA, 1);
+      plane(group, -1.7, -.3, .8, .22, 0x2E6ECF, 1);
     } else {
       const ring = new THREE.Mesh(new THREE.RingGeometry(.42, .6, 48), new THREE.MeshBasicMaterial({ color: sky, transparent: true, side: THREE.DoubleSide }));
       ring.rotation.x = -Math.PI / 2;
       ring.position.set(-.95, .045, -.1);
       group.add(ring);
-      [0x10224A, 0x1F3B7A, 0x2F5BEA, sky].forEach((color, swatch) => {
+      [0x10224A, 0x1C3F79, 0x2E6ECF, sky].forEach((color, swatch) => {
         // Shift the specified row .23 units inward to keep its last edge at 1.8.
         plane(group, -.18 + swatch * .52, -.56, .42, .42, color, 1);
       });
@@ -104,7 +104,7 @@ async function initHero() {
     construction.add(dashed);
   }
   root.add(construction);
-  const grid = new THREE.GridHelper(14, 28, 0x1F3B7A, 0x13265A);
+  const grid = new THREE.GridHelper(14, 28, 0x1C3F79, 0x13265A);
   grid.position.y = -.6;
   grid.material.transparent = true;
   grid.material.opacity = .35;

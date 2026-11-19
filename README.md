@@ -1,4 +1,4 @@
-# كحلي / Kohly
+# أوربيتا / Orbita
 
 صفحة تسويقية ثابتة بالعربية والإنجليزية، دون بناء أو اعتماديات محلية. افتح المجلد بأي خادم ملفات ثابتة (مثل `npx serve .` إذا كان متاحًا)، ثم افتح `/` للعربية و`/en/` للإنجليزية. لا يلزم تشغيل npm أو تثبيت حزم للمشروع؛ يمكن أيضًا استخدام `python -m http.server 8000`.
 
@@ -28,7 +28,7 @@ Static Arabic and English landing pages, with no build step or local dependencie
 
 The site is hosted on GitHub Pages and does not depend on any other subscription. Edit the files, preview with a local server (module scripts do not run from `file://`), then commit and `git push` to `main`. Pages redeploys within a minute or two. If this folder is lost, clone the repository again.
 
-- **الاسم / Brand:** ابحث عن `كحلي` و`Kohly` في `index.html` و`en/index.html`، بما فيها بيانات الرأس. Replace these plain-text names in both pages, including metadata.
+- **الاسم والألوان / Brand:** الاسم `أوربيتا` في نصوص الصفحة العربية و`Orbita` في الشعار والصفحة الإنجليزية. ألوان الهوية `#9DBEF3` و`#1C3F79` و`#2E6ECF` موجودة في `:root` داخل `assets/css/styles.css` وفي `assets/js/hero3d.js`. الشعار الحالي رمز مؤقت داخل `<a class="logo">` في الصفحتين وفي `assets/img/favicon.svg`؛ استبدلوه بملف SVG الرسمي. The Arabic copy uses `أوربيتا`; the logo and English page use `Orbita`. Brand colors live in `:root` and in `hero3d.js`. The logo mark is a placeholder until the official SVG is available.
 - **التواصل / Contact:** غيّر `hello@example.com` ورقم الهاتف ورابط `wa.me` والمكان وروابط التواصل الاجتماعي في الصفحتين. Update the contact details, social URLs, and form `data-mailto` in both pages.
 - **الفريق / Team:** استبدل `اسم العضو` و`Member name` في قسم `#team`. توجد تعليقات لاستبدال الرموز بصور حقيقية. Replace the member names; photo replacement comments specify dimensions and alternative text.
 - **الأعمال / Work:** عدّل البلاطات في `#work` في الصفحتين؛ أضف الصور الحقيقية وبيانات المشاريع مكان العناصر النائبة. Replace the project placeholders and categories in both pages; image comments include dimensions, alt text and lazy loading.
